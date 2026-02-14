@@ -47,6 +47,9 @@
     </script>
   <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <!-- html2canvas & jsPDF for PDF Download -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body class="bg-[#0F172A] text-slate-200 overflow-hidden">
@@ -70,7 +73,8 @@
       Calendar,
       User,
       Menu,
-      X
+      X,
+      Download
     } from 'lucide-react';
 
     // --- 스타일: 프리텐다드 폰트 적용 ---
@@ -162,7 +166,49 @@
       }
     ];
 
-    // --- 공통 컴포넌트 ---
+    // --- PDF 다운로드 함수 ---
+    const handleDownloadPdf = async () => {
+      const element = document.getElementById('pdf-content');
+      if (!element) return;
+
+      try {
+        const canvas = await html2canvas(element, {
+          scale: 2, // 고화질
+          useCORS: true, // 이미지 로딩 문제 해결
+          logging: false,
+          backgroundColor: '#0F172A' // 배경색 지정
+        });
+
+        const imgData = canvas.toDataURL('image/png');
+        const pdf = new jspdf.jsPDF({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+
+        const imgWidth = 210; // A4 너비
+        const pageHeight = 297; // A4 높이
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+
+        pdf.save('portfolio_leejunho.pdf');
+      } catch (error) {
+        console.error("PDF Download Error:", error);
+        alert("PDF 다운로드 중 오류가 발생했습니다.");
+      }
+    };
+
     const Card = ({ children, className = "", title }) => (
       <article className={`bg-slate-800/40 backdrop-blur-md border border-white/5 rounded-xl p-5 ${className}`}>
         {title && (
@@ -481,6 +527,14 @@
                   </div>
                 </div>
               </footer>
+
+              <div className="p-4 border-t border-white/5">
+                <button onClick={handleDownloadPdf}
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[12px] font-bold transition-colors border border-white/5">
+                  <Download size={14} />
+                  PDF 다운로드
+                </button>
+              </div>
             </aside>
 
             {/* Mobile: 상단 헤더 (md 미만에서 보임) */}
@@ -491,10 +545,13 @@
                 </div>
                 <span className="text-sm font-bold text-white">이준호 <span className="text-slate-500 text-xs font-normal">MD</span></span>
               </div>
+              <button onClick={handleDownloadPdf} className="p-2 text-slate-400 hover:text-white">
+                <Download size={20} />
+              </button>
             </header>
 
             {/* 메인 콘텐츠 영역 */}
-            <main className="flex-1 overflow-y-auto relative z-10 p-4 md:p-8 lg:p-10 mt-14 md:mt-0">
+            <main className="flex-1 overflow-y-auto relative z-10 p-4 md:p-8 lg:p-10 mt-14 md:mt-0" id="pdf-content">
               <div className="max-w-5xl mx-auto">
                 {activeTab === 'dashboard' && <DashboardView />}
                 {activeTab === 'career' && <CareerHistoryView />}
