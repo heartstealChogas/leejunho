@@ -5,9 +5,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>이준호 | 이커머스 총괄 디렉터 포트폴리오</title>
-  <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Pretendard Font -->
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
   <style>
@@ -35,7 +33,6 @@
       background: #334155;
     }
   </style>
-  <!-- Import Map for React & Lucide -->
   <script type="importmap">
     {
         "imports": {
@@ -45,9 +42,7 @@
         }
     }
     </script>
-  <!-- Babel for JSX -->
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <!-- html2canvas & jsPDF for PDF Download -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
@@ -166,24 +161,34 @@
       }
     ];
 
-    // --- PDF 다운로드 함수 (수정: 4페이지 개별 출력) ---
+    // --- PDF 다운로드 함수 (수정됨: 1탭 1페이지 강제 고정) ---
     const handleDownloadPdf = async () => {
       const printContainer = document.getElementById('print-container');
       if (!printContainer) return;
 
-      // 1. 인쇄용 컨테이너 표시 (캡처를 위해 잠시 보이게 함, 하지만 화면 밖으로)
+      // 1. 인쇄용 컨테이너 표시 (캡처를 위해 잠시 보이게 함)
+      const originalLeft = printContainer.style.left;
+      const originalTop = printContainer.style.top;
+      const originalZIndex = printContainer.style.zIndex;
+
       printContainer.style.display = 'block';
-      await new Promise(resolve => setTimeout(resolve, 500)); // 렌더링 대기
+      printContainer.style.left = '0px';
+      printContainer.style.top = '0px';
+      printContainer.style.zIndex = '99999'; // 최상단
+
+      // 렌더링 안정성을 위해 대기 (1초)
+      await new Promise(resolve => setTimeout(resolve, 1000));
 
       try {
+        // A4 가로 방향 (Landscape) 설정
         const pdf = new jspdf.jsPDF({
-          orientation: 'portrait',
+          orientation: 'landscape',
           unit: 'mm',
           format: 'a4'
         });
 
-        const imgWidth = 210; // A4 너비 (mm)
-        const pageHeight = 297; // A4 높이 (mm)
+        const pageWidth = 297; // A4 Width (mm)
+        const pageHeight = 210; // A4 Height (mm)
 
         // 4개의 뷰를 순차적으로 캡처
         const views = ['print-dashboard', 'print-career', 'print-showroom', 'print-sns'];
@@ -192,44 +197,38 @@
           const viewId = views[i];
           const element = document.getElementById(viewId);
 
+          if (!element) continue;
+
           // html2canvas 실행
           const canvas = await html2canvas(element, {
-            scale: 2,
+            scale: 2, // 고화질
             useCORS: true,
             logging: false,
             backgroundColor: '#0F172A',
-            windowWidth: 1280 // 데스크탑 뷰 강제
+            width: 1280, // 데스크탑 뷰 기준 렌더링
+            windowWidth: 1280
           });
 
           const imgData = canvas.toDataURL('image/png');
-          const imgHeight = (canvas.height * imgWidth) / canvas.width;
 
-          // 첫 페이지가 아니면 페이지 추가
+          // 첫 페이지가 아니면 새 페이지 추가
           if (i > 0) pdf.addPage();
 
-          // 이미지 추가 (긴 내용은 잘릴 수 있음 - 1페이지 1탭 원칙)
-          let heightLeft = imgHeight;
-          let position = 0;
-
-          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-          heightLeft -= pageHeight;
-
-          // 내용이 A4보다 길 경우 추가 페이지 생성 (해당 탭 내용이 이어짐)
-          while (heightLeft > 0) {
-            position = heightLeft - imgHeight;
-            pdf.addPage();
-            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-            heightLeft -= pageHeight;
-          }
+          // 이미지를 A4 사이즈(297x210)에 꽉 차게 늘려서 삽입
+          // 비율 계산을 제거하고 강제로 한 페이지에 맞춤
+          pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
         }
 
-        pdf.save('portfolio_leejunho_all_tabs.pdf');
+        pdf.save('portfolio_leejunho_landscape.pdf');
       } catch (error) {
         console.error("PDF Download Error:", error);
         alert("PDF 다운로드 중 오류가 발생했습니다.");
       } finally {
-        // 2. 인쇄용 컨테이너 다시 숨김
+        // 2. 인쇄용 컨테이너 원상복구
         printContainer.style.display = 'none';
+        printContainer.style.left = originalLeft;
+        printContainer.style.top = originalTop;
+        printContainer.style.zIndex = originalZIndex;
       }
     };
 
@@ -614,50 +613,23 @@
               top: 0,
               left: '-10000px',
               width: '1280px',
+              minHeight: '905px', // A4 비율에 맞춰 높이 지정
               zIndex: -9999,
               display: 'none' // 평소에는 display: none, 캡처 시엔 block
             }}>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-dashboard">
+              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-dashboard">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">대시보드</h1>
                 <DashboardView />
               </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-career">
+              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-career">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">경력 기술서</h1>
                 <CareerHistoryView />
               </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-showroom">
+              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-showroom">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">성공 사례</h1>
                 <ShowroomView />
               </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-sns">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">SNS / 팝업</h1>
-                <SnsPopupView />
-              </div>
-            </div>
-
-            {/* --- 인쇄용 컨테이너 (숨김 처리) --- */}
-            {/* 고해상도 캡처를 위해 데스크탑 너비(1280px)로 고정하고, 화면 밖으로 보냄 */}
-            <div id="print-container" style={{
-              position: 'fixed',
-              top: 0,
-              left: '-10000px',
-              width: '1280px',
-              zIndex: -9999,
-              display: 'none' // 평소에는 display: none, 캡처 시엔 block
-            }}>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-dashboard">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">대시보드</h1>
-                <DashboardView />
-              </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-career">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">경력 기술서</h1>
-                <CareerHistoryView />
-              </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-showroom">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">성공 사례</h1>
-                <ShowroomView />
-              </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-sns">
+              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-sns">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">SNS / 팝업</h1>
                 <SnsPopupView />
               </div>
