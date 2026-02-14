@@ -376,6 +376,50 @@
       </section>
     );
 
+    // --- 뷰 4: SNS 인플루언서 / 팝업 스토어 (SNS & Popup) ---
+    const SnsPopupView = () => {
+      const images = [
+        { src: "./d/a.jpg", alt: "SNS/Popup Image A" },
+        { src: "./d/b.jpg", alt: "SNS/Popup Image B" },
+        { src: "./d/c.jpg", alt: "SNS/Popup Image C" },
+        { src: "./d/d.jpg", alt: "SNS/Popup Image D" },
+        { src: "./d/e.jpg", alt: "SNS/Popup Image E" },
+        { src: "./d/f.jpg", alt: "SNS/Popup Image F" },
+      ];
+
+      return (
+        <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20 md:pb-0">
+          <div className="mb-6">
+            <h2 className="text-xl font-bold text-white flex items-center gap-2">
+              <Activity className="text-rose-500" />
+              SNS 인플루언서 / 팝업 스토어
+            </h2>
+            <p className="text-sm text-slate-400 mt-1">
+              다양한 채널과 오프라인 팝업 스토어 현황
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {images.map((img, idx) => (
+              <Card key={idx} className="overflow-hidden group p-0">
+                <div className="aspect-[4/3] overflow-hidden bg-slate-800 relative">
+                  <img
+                    src={img.src}
+                    alt={img.alt}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                    loading="lazy"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
+                    <span className="text-white text-sm font-bold">{img.src.split('/').pop()}</span>
+                  </div>
+                </div>
+              </Card>
+            ))}
+          </div>
+        </section>
+      );
+    };
+
     // --- 메인 앱 (Responsive Layout) ---
     function Portfolio() {
       const [activeTab, setActiveTab] = useState('dashboard');
@@ -384,6 +428,7 @@
         { id: 'dashboard', label: '대시보드', icon: <LayoutDashboard size={18} /> },
         { id: 'career', label: '경력 기술서', icon: <Briefcase size={18} /> },
         { id: 'showroom', label: '성공 사례', icon: <Award size={18} /> },
+        { id: 'sns_popup', label: 'SNS / 팝업', icon: <Activity size={18} /> },
       ];
 
       return (
@@ -409,8 +454,8 @@
                 {MENU.map((item) => (
                   <button key={item.id} onClick={() => setActiveTab(item.id)}
                     className={`w-full flex items-center gap-3 px-4 py-3.5 text-[13px] font-bold rounded-xl transition-all duration-200 ${activeTab === item.id
-                        ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
-                        : 'text-slate-500 hover:text-white hover:bg-white/5'
+                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
+                      : 'text-slate-500 hover:text-white hover:bg-white/5'
                       }`}
                   >
                     {item.icon}
@@ -449,6 +494,7 @@
                 {activeTab === 'dashboard' && <DashboardView />}
                 {activeTab === 'career' && <CareerHistoryView />}
                 {activeTab === 'showroom' && <ShowroomView />}
+                {activeTab === 'sns_popup' && <SnsPopupView />}
               </div>
 
               <footer className="max-w-5xl mx-auto mt-12 py-6 border-t border-white/5 text-center hidden md:block">
