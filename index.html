@@ -166,46 +166,70 @@
       }
     ];
 
-    // --- PDF 다운로드 함수 ---
+    // --- PDF 다운로드 함수 (수정: 4페이지 개별 출력) ---
     const handleDownloadPdf = async () => {
-      const element = document.getElementById('pdf-content');
-      if (!element) return;
+      const printContainer = document.getElementById('print-container');
+      if (!printContainer) return;
+
+      // 1. 인쇄용 컨테이너 표시 (캡처를 위해 잠시 보이게 함, 하지만 화면 밖으로)
+      printContainer.style.display = 'block';
+      await new Promise(resolve => setTimeout(resolve, 500)); // 렌더링 대기
 
       try {
-        const canvas = await html2canvas(element, {
-          scale: 2, // 고화질
-          useCORS: true, // 이미지 로딩 문제 해결
-          logging: false,
-          backgroundColor: '#0F172A' // 배경색 지정
-        });
-
-        const imgData = canvas.toDataURL('image/png');
         const pdf = new jspdf.jsPDF({
           orientation: 'portrait',
           unit: 'mm',
           format: 'a4'
         });
 
-        const imgWidth = 210; // A4 너비
-        const pageHeight = 297; // A4 높이
-        const imgHeight = (canvas.height * imgWidth) / canvas.width;
-        let heightLeft = imgHeight;
-        let position = 0;
+        const imgWidth = 210; // A4 너비 (mm)
+        const pageHeight = 297; // A4 높이 (mm)
 
-        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-        heightLeft -= pageHeight;
+        // 4개의 뷰를 순차적으로 캡처
+        const views = ['print-dashboard', 'print-career', 'print-showroom', 'print-sns'];
 
-        while (heightLeft >= 0) {
-          position = heightLeft - imgHeight;
-          pdf.addPage();
+        for (let i = 0; i < views.length; i++) {
+          const viewId = views[i];
+          const element = document.getElementById(viewId);
+
+          // html2canvas 실행
+          const canvas = await html2canvas(element, {
+            scale: 2,
+            useCORS: true,
+            logging: false,
+            backgroundColor: '#0F172A',
+            windowWidth: 1280 // 데스크탑 뷰 강제
+          });
+
+          const imgData = canvas.toDataURL('image/png');
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+
+          // 첫 페이지가 아니면 페이지 추가
+          if (i > 0) pdf.addPage();
+
+          // 이미지 추가 (긴 내용은 잘릴 수 있음 - 1페이지 1탭 원칙)
+          let heightLeft = imgHeight;
+          let position = 0;
+
           pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
           heightLeft -= pageHeight;
+
+          // 내용이 A4보다 길 경우 추가 페이지 생성 (해당 탭 내용이 이어짐)
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            pdf.addPage();
+            pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
         }
 
-        pdf.save('portfolio_leejunho.pdf');
+        pdf.save('portfolio_leejunho_all_tabs.pdf');
       } catch (error) {
         console.error("PDF Download Error:", error);
         alert("PDF 다운로드 중 오류가 발생했습니다.");
+      } finally {
+        // 2. 인쇄용 컨테이너 다시 숨김
+        printContainer.style.display = 'none';
       }
     };
 
@@ -582,6 +606,62 @@
                 ))}
               </div>
             </nav>
+
+            {/* --- 인쇄용 컨테이너 (숨김 처리) --- */}
+            {/* 고해상도 캡처를 위해 데스크탑 너비(1280px)로 고정하고, 화면 밖으로 보냄 */}
+            <div id="print-container" style={{
+              position: 'fixed',
+              top: 0,
+              left: '-10000px',
+              width: '1280px',
+              zIndex: -9999,
+              display: 'none' // 평소에는 display: none, 캡처 시엔 block
+            }}>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-dashboard">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">대시보드</h1>
+                <DashboardView />
+              </div>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-career">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">경력 기술서</h1>
+                <CareerHistoryView />
+              </div>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-showroom">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">성공 사례</h1>
+                <ShowroomView />
+              </div>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-sns">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">SNS / 팝업</h1>
+                <SnsPopupView />
+              </div>
+            </div>
+
+            {/* --- 인쇄용 컨테이너 (숨김 처리) --- */}
+            {/* 고해상도 캡처를 위해 데스크탑 너비(1280px)로 고정하고, 화면 밖으로 보냄 */}
+            <div id="print-container" style={{
+              position: 'fixed',
+              top: 0,
+              left: '-10000px',
+              width: '1280px',
+              zIndex: -9999,
+              display: 'none' // 평소에는 display: none, 캡처 시엔 block
+            }}>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-dashboard">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">대시보드</h1>
+                <DashboardView />
+              </div>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-career">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">경력 기술서</h1>
+                <CareerHistoryView />
+              </div>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-showroom">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">성공 사례</h1>
+                <ShowroomView />
+              </div>
+              <div className="p-10 bg-[#0F172A] text-slate-200" id="print-sns">
+                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">SNS / 팝업</h1>
+                <SnsPopupView />
+              </div>
+            </div>
 
           </div>
         </>
