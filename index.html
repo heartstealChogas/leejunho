@@ -81,7 +81,6 @@
             color: #E2E8F0; /* Slate 200 */
             -webkit-font-smoothing: antialiased;
         }
-        /* 스크롤바 숨김 (깔끔한 UI) */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -91,7 +90,7 @@
         }
         `;
 
-    // --- 데이터 상수 (이력서 기반 검증 완료) ---
+    // --- 데이터 상수 ---
     const PROFILE = {
       name: "이준호",
       role: "12년차 이커머스 MD & 물류 전문가",
@@ -161,12 +160,12 @@
       }
     ];
 
-    // --- PDF 다운로드 함수 (수정됨: 1탭 1페이지 강제 고정) ---
+    // --- (핵심 수정) PDF 다운로드 함수: 고화질 & 비율 유지 Fit ---
     const handleDownloadPdf = async () => {
       const printContainer = document.getElementById('print-container');
       if (!printContainer) return;
 
-      // 1. 인쇄용 컨테이너 표시 (캡처를 위해 잠시 보이게 함)
+      // 1. 캡처용 컨테이너 활성화
       const originalLeft = printContainer.style.left;
       const originalTop = printContainer.style.top;
       const originalZIndex = printContainer.style.zIndex;
@@ -174,57 +173,72 @@
       printContainer.style.display = 'block';
       printContainer.style.left = '0px';
       printContainer.style.top = '0px';
-      printContainer.style.zIndex = '99999'; // 최상단
+      printContainer.style.zIndex = '99999';
 
-      // 렌더링 안정성을 위해 대기 (1초)
+      // 렌더링 대기
       await new Promise(resolve => setTimeout(resolve, 1000));
 
       try {
-        // A4 가로 방향 (Landscape) 설정
+        // A4 가로 방향
         const pdf = new jspdf.jsPDF({
           orientation: 'landscape',
           unit: 'mm',
           format: 'a4'
         });
 
-        const pageWidth = 297; // A4 Width (mm)
-        const pageHeight = 210; // A4 Height (mm)
+        const pdfWidth = 297;  // A4 Width (mm)
+        const pdfHeight = 210; // A4 Height (mm)
 
-        // 4개의 뷰를 순차적으로 캡처
         const views = ['print-dashboard', 'print-career', 'print-showroom', 'print-sns'];
 
         for (let i = 0; i < views.length; i++) {
           const viewId = views[i];
           const element = document.getElementById(viewId);
-
           if (!element) continue;
 
-          // html2canvas 실행
+          // [핵심] scale: 3 -> 3배 고해상도로 캡처하여 깨짐 방지
           const canvas = await html2canvas(element, {
-            scale: 2, // 고화질
+            scale: 3,
             useCORS: true,
             logging: false,
             backgroundColor: '#0F172A',
-            width: 1280, // 데스크탑 뷰 기준 렌더링
+            width: 1280,
             windowWidth: 1280
           });
 
           const imgData = canvas.toDataURL('image/png');
 
-          // 첫 페이지가 아니면 새 페이지 추가
+          // 이미지의 실제 비율 계산
+          const imgProps = pdf.getImageProperties(imgData);
+          const imgWidth = imgProps.width;
+          const imgHeight = imgProps.height;
+
+          // PDF 페이지 크기에 맞게 비율 계산 (Fit to Page)
+          // 너비를 기준으로 높이를 계산했을 때 페이지를 넘어가면, 높이를 기준으로 너비를 맞춤
+          let finalWidth = pdfWidth;
+          let finalHeight = (imgHeight * pdfWidth) / imgWidth;
+
+          // 만약 높이가 A4(210mm)를 넘어가면 높이 기준으로 다시 계산 (짤림 방지)
+          if (finalHeight > pdfHeight) {
+            finalHeight = pdfHeight;
+            finalWidth = (imgWidth * pdfHeight) / imgHeight;
+          }
+
+          // 중앙 정렬을 위한 위치 계산
+          const xPos = (pdfWidth - finalWidth) / 2;
+          const yPos = (pdfHeight - finalHeight) / 2;
+
           if (i > 0) pdf.addPage();
 
-          // 이미지를 A4 사이즈(297x210)에 꽉 차게 늘려서 삽입
-          // 비율 계산을 제거하고 강제로 한 페이지에 맞춤
-          pdf.addImage(imgData, 'PNG', 0, 0, pageWidth, pageHeight);
+          // 계산된 크기와 위치로 이미지 삽입
+          pdf.addImage(imgData, 'PNG', xPos, yPos, finalWidth, finalHeight);
         }
 
-        pdf.save('portfolio_leejunho_landscape.pdf');
+        pdf.save('portfolio_leejunho_high_res.pdf');
       } catch (error) {
         console.error("PDF Download Error:", error);
         alert("PDF 다운로드 중 오류가 발생했습니다.");
       } finally {
-        // 2. 인쇄용 컨테이너 원상복구
         printContainer.style.display = 'none';
         printContainer.style.left = originalLeft;
         printContainer.style.top = originalTop;
@@ -246,14 +260,11 @@
       </article>
     );
 
-    // --- 뷰 1: 대시보드 (Dashboard) ---
     const DashboardView = () => (
-      <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-4 pb-20 md:pb-0">
+      <section className="space-y-4">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          {/* 프로필 카드 */}
           <Card className="lg:col-span-2 relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none">
-            </div>
+            <div className="absolute top-0 right-0 w-64 h-64 bg-blue-600/10 rounded-full blur-[80px] pointer-events-none"></div>
             <div className="relative z-10">
               <div className="flex items-center gap-2 mb-4">
                 <span className="px-2 py-0.5 rounded bg-blue-600 text-white text-[10px] font-bold">AVAILABLE</span>
@@ -278,7 +289,6 @@
             </div>
           </Card>
 
-          {/* 핵심 지표 */}
           <Card title="핵심 성과 지표">
             <div className="space-y-4">
               {STATS.map((stat, idx) => (
@@ -330,42 +340,34 @@
       </section>
     );
 
-    // --- 뷰 2: 경력 사항 (Career) ---
     const CareerHistoryView = () => (
-      <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 space-y-4 pb-20 md:pb-0">
+      <section className="space-y-4">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-lg font-bold text-white">경력 상세</h2>
           <span className="text-xs text-slate-500">총 11년 10개월</span>
         </div>
 
         {CAREERS.map((career, idx) => (
-          <Card key={idx} className="relative group hover:bg-slate-800/60 transition-colors">
+          <Card key={idx} className="relative group">
             <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-2">
               <div>
                 <div className="flex items-center gap-2 mb-1">
-                  <h3 className="text-[14px] font-bold text-white group-hover:text-blue-400 transition-colors">{career.company}
-                  </h3>
+                  <h3 className="text-[14px] font-bold text-white">{career.company}</h3>
                   {idx === 0 && <span className="text-[9px] px-1.5 py-0.5 bg-blue-600 text-white rounded font-bold">최신</span>}
                 </div>
                 <p className="text-[11px] text-slate-400 flex items-center gap-1.5">
                   <Briefcase size={12} className="text-slate-500" /> {career.role}
                 </p>
               </div>
-              <div
-                className="text-[10px] text-slate-500 bg-black/20 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
+              <div className="text-[10px] text-slate-500 bg-black/20 px-2 py-1 rounded-md border border-white/5 whitespace-nowrap">
                 {career.period}
               </div>
             </div>
-
             <div className="flex flex-wrap gap-1.5 mb-4">
               {career.highlights.map((h, i) => (
-                <span key={i}
-                  className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/30 text-blue-300 border border-blue-800/30">
-                  #{h}
-                </span>
+                <span key={i} className="text-[10px] px-2 py-0.5 rounded-full bg-blue-900/30 text-blue-300 border border-blue-800/30">#{h}</span>
               ))}
             </div>
-
             <div className="border-t border-white/5 pt-4">
               <ul className="space-y-2">
                 {career.tasks.map((task, tIdx) => (
@@ -381,71 +383,61 @@
       </section>
     );
 
-    // --- 뷰 3: 성공 사례 (Showroom) ---
     const ShowroomView = () => (
-      <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20 md:pb-0">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <Card className="border-l-2 border-l-blue-500 h-full flex flex-col">
-            <div className="text-[10px] font-bold text-blue-500 uppercase mb-2 tracking-wider">Logistics Optimization</div>
-            <h3 className="text-[16px] font-bold text-white mb-3">시스템 전산화 및 자동화</h3>
-            <p className="text-[12px] text-slate-400 leading-relaxed mb-6 flex-1">
-              주문 폭주 시 발생하는 재고 오차와 출고 지연을 해결하기 위해 사방넷과 ERP 시스템의 연동 로직을 전면 재설계했습니다.
-            </p>
-            <div className="grid grid-cols-2 gap-2 mt-auto">
-              <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
-                <div className="text-[10px] text-slate-500 mb-1">오배송률</div>
-                <div className="text-[14px] font-bold text-white">0.1% ↓</div>
-              </div>
-              <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
-                <div className="text-[10px] text-slate-500 mb-1">마감 시간</div>
-                <div className="text-[14px] font-bold text-white">2시간 ↓</div>
-              </div>
+      <section className="grid grid-cols-1 md:grid-cols-2 gap-4 h-full">
+        <Card className="border-l-2 border-l-blue-500 h-full flex flex-col">
+          <div className="text-[10px] font-bold text-blue-500 uppercase mb-2 tracking-wider">Logistics Optimization</div>
+          <h3 className="text-[16px] font-bold text-white mb-3">시스템 전산화 및 자동화</h3>
+          <p className="text-[12px] text-slate-400 leading-relaxed mb-6 flex-1">
+            주문 폭주 시 발생하는 재고 오차와 출고 지연을 해결하기 위해 사방넷과 ERP 시스템의 연동 로직을 전면 재설계했습니다.
+          </p>
+          <div className="grid grid-cols-2 gap-2 mt-auto">
+            <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
+              <div className="text-[10px] text-slate-500 mb-1">오배송률</div>
+              <div className="text-[14px] font-bold text-white">0.1% ↓</div>
             </div>
-          </Card>
-
-          <Card className="border-l-2 border-l-emerald-500 h-full flex flex-col">
-            <div className="text-[10px] font-bold text-emerald-500 uppercase mb-2 tracking-wider">Channel Expansion</div>
-            <h3 className="text-[16px] font-bold text-white mb-3">코닥 캐리어 무신사 런칭</h3>
-            <p className="text-[12px] text-slate-400 leading-relaxed mb-6 flex-1">
-              기존 오픈마켓 위주에서 2030 타겟 플랫폼으로 확장했습니다. 타겟 맞춤형 상세페이지 리뉴얼과 키워드 광고 최적화를 진행했습니다.
-            </p>
-            <div className="grid grid-cols-2 gap-2 mt-auto">
-              <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
-                <div className="text-[10px] text-slate-500 mb-1">순위</div>
-                <div className="text-[14px] font-bold text-white">TOP 10</div>
-              </div>
-              <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
-                <div className="text-[10px] text-slate-500 mb-1">타겟</div>
-                <div className="text-[14px] font-bold text-white">MZ 세대</div>
-              </div>
+            <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
+              <div className="text-[10px] text-slate-500 mb-1">마감 시간</div>
+              <div className="text-[14px] font-bold text-white">2시간 ↓</div>
             </div>
-          </Card>
-
-          <Card className="col-span-1 md:col-span-2 border-l-2 border-l-purple-500 bg-slate-800/60">
-            <div className="flex flex-col md:flex-row gap-4 items-center">
-              <div className="flex-1">
-                <div className="text-[10px] font-bold text-purple-500 uppercase mb-2 tracking-wider">Omni-Channel Strategy
-                </div>
-                <h3 className="text-[16px] font-bold text-white mb-2">온/오프라인 옴니채널 전략</h3>
-                <p className="text-[12px] text-slate-400 leading-relaxed">
-                  이마트 트레이더스 팝업 행사와 폐쇄몰(공무원 복지몰) 입점을 통해 매출 파이프라인을 다각화했습니다.
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2 justify-center md:justify-end">
-                {["이마트 트레이더스", "공무원 복지몰", "홈앤쇼핑"].map((tag, i) => (
-                  <span key={i}
-                    className="px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-[11px] font-medium text-purple-300">
-                    {tag}
-                  </span>
-                ))}
-              </div>
+          </div>
+        </Card>
+        <Card className="border-l-2 border-l-emerald-500 h-full flex flex-col">
+          <div className="text-[10px] font-bold text-emerald-500 uppercase mb-2 tracking-wider">Channel Expansion</div>
+          <h3 className="text-[16px] font-bold text-white mb-3">코닥 캐리어 무신사 런칭</h3>
+          <p className="text-[12px] text-slate-400 leading-relaxed mb-6 flex-1">
+            기존 오픈마켓 위주에서 2030 타겟 플랫폼으로 확장했습니다. 타겟 맞춤형 상세페이지 리뉴얼과 키워드 광고 최적화를 진행했습니다.
+          </p>
+          <div className="grid grid-cols-2 gap-2 mt-auto">
+            <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
+              <div className="text-[10px] text-slate-500 mb-1">순위</div>
+              <div className="text-[14px] font-bold text-white">TOP 10</div>
             </div>
-          </Card>
-        </div>
+            <div className="bg-black/20 p-2.5 rounded-lg text-center border border-white/5">
+              <div className="text-[10px] text-slate-500 mb-1">타겟</div>
+              <div className="text-[14px] font-bold text-white">MZ 세대</div>
+            </div>
+          </div>
+        </Card>
+        <Card className="col-span-1 md:col-span-2 border-l-2 border-l-purple-500 bg-slate-800/60">
+          <div className="flex flex-col md:flex-row gap-4 items-center">
+            <div className="flex-1">
+              <div className="text-[10px] font-bold text-purple-500 uppercase mb-2 tracking-wider">Omni-Channel Strategy</div>
+              <h3 className="text-[16px] font-bold text-white mb-2">온/오프라인 옴니채널 전략</h3>
+              <p className="text-[12px] text-slate-400 leading-relaxed">
+                이마트 트레이더스 팝업 행사와 폐쇄몰(공무원 복지몰) 입점을 통해 매출 파이프라인을 다각화했습니다.
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 justify-center md:justify-end">
+              {["이마트 트레이더스", "공무원 복지몰", "홈앤쇼핑"].map((tag, i) => (
+                <span key={i} className="px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-[11px] font-medium text-purple-300">{tag}</span>
+              ))}
+            </div>
+          </div>
+        </Card>
       </section>
     );
 
-    // --- 뷰 4: SNS 인플루언서 / 팝업 스토어 (SNS & Popup) ---
     const SnsPopupView = () => {
       const images = [
         { src: "./d/a.jpg", alt: "SNS/Popup Image A" },
@@ -454,38 +446,21 @@
         { src: "./d/d.jpg", alt: "SNS/Popup Image D" },
         { src: "./d/e.jpg", alt: "SNS/Popup Image E" },
         { src: "./d/f.jpg", alt: "SNS/Popup Image F" },
-        { src: "./d/g.jpg", alt: "SNS/Popup Image G" },
-        { src: "./d/h.jpg", alt: "SNS/Popup Image H" },
-        { src: "./d/i.jpg", alt: "SNS/Popup Image I" },
-        { src: "./d/j.jpg", alt: "SNS/Popup Image J" },
-        { src: "./d/k.jpg", alt: "SNS/Popup Image K" },
       ];
-
       return (
-        <section className="animate-in fade-in slide-in-from-bottom-2 duration-500 pb-20 md:pb-0">
+        <section>
           <div className="mb-6">
             <h2 className="text-xl font-bold text-white flex items-center gap-2">
               <Activity className="text-rose-500" />
               SNS 인플루언서 / 팝업 스토어
             </h2>
-            <p className="text-sm text-slate-400 mt-1">
-              다양한 채널과 오프라인 팝업 스토어 현황
-            </p>
+            <p className="text-sm text-slate-400 mt-1">다양한 채널과 오프라인 팝업 스토어 현황</p>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {images.map((img, idx) => (
               <Card key={idx} className="overflow-hidden group p-0">
                 <div className="aspect-[4/3] overflow-hidden bg-slate-800 relative">
-                  <img
-                    src={img.src}
-                    alt={img.alt}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/60 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                    <span className="text-white text-sm font-bold">{img.src.split('/').pop()}</span>
-                  </div>
+                  <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
                 </div>
               </Card>
             ))}
@@ -494,10 +469,8 @@
       );
     };
 
-    // --- 메인 앱 (Responsive Layout) ---
     function Portfolio() {
       const [activeTab, setActiveTab] = useState('dashboard');
-
       const MENU = [
         { id: 'dashboard', label: '대시보드', icon: <LayoutDashboard size={18} /> },
         { id: 'career', label: '경력 기술서', icon: <Briefcase size={18} /> },
@@ -509,8 +482,6 @@
         <>
           <style>{fontStyle}</style>
           <div className="flex h-screen bg-[#0F172A] text-slate-200 overflow-hidden selection:bg-blue-500/30 selection:text-white">
-
-            {/* PC: 좌측 사이드바 (md 이상에서 보임) */}
             <aside className="hidden md:flex w-64 bg-[#0B1120] border-r border-white/5 flex-col z-20 shadow-xl">
               <div className="p-8 border-b border-white/5">
                 <div className="flex items-center gap-3">
@@ -523,57 +494,29 @@
                   </div>
                 </div>
               </div>
-
               <nav className="flex-1 p-4 space-y-1">
                 {MENU.map((item) => (
                   <button key={item.id} onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-[13px] font-bold rounded-xl transition-all duration-200 ${activeTab === item.id
-                      ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40'
-                      : 'text-slate-500 hover:text-white hover:bg-white/5'
-                      }`}
-                  >
-                    {item.icon}
-                    {item.label}
+                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-[13px] font-bold rounded-xl transition-all duration-200 ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
+                    {item.icon} {item.label}
                   </button>
                 ))}
               </nav>
-
-              <footer className="p-6 border-t border-white/5">
-                <div className="bg-slate-900/50 rounded-xl p-4 border border-white/5">
-                  <div className="text-[9px] text-slate-500 mb-2 font-bold tracking-widest uppercase">CONTACT</div>
-                  <div className="text-[11px] text-slate-300 mb-1.5 flex items-center gap-2">
-                    <Phone size={12} className="text-blue-500" /> {PROFILE.phone}
-                  </div>
-                  <div className="text-[11px] text-slate-300 flex items-center gap-2 truncate" title={PROFILE.email}>
-                    <Mail size={12} className="text-blue-500 flex-shrink-0" />
-                    <span className="truncate">{PROFILE.email}</span>
-                  </div>
-                </div>
-              </footer>
-
               <div className="p-4 border-t border-white/5">
-                <button onClick={handleDownloadPdf}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[12px] font-bold transition-colors border border-white/5">
-                  <Download size={14} />
-                  PDF 다운로드
+                <button onClick={handleDownloadPdf} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[12px] font-bold transition-colors border border-white/5">
+                  <Download size={14} /> PDF 다운로드
                 </button>
               </div>
             </aside>
 
-            {/* Mobile: 상단 헤더 (md 미만에서 보임) */}
             <header className="md:hidden fixed top-0 left-0 w-full h-14 bg-[#0B1120]/90 backdrop-blur-md border-b border-white/5 z-30 flex items-center justify-between px-4">
               <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white">
-                  <span className="font-bold text-xs">이</span>
-                </div>
+                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white"><span className="font-bold text-xs">이</span></div>
                 <span className="text-sm font-bold text-white">이준호 <span className="text-slate-500 text-xs font-normal">MD</span></span>
               </div>
-              <button onClick={handleDownloadPdf} className="p-2 text-slate-400 hover:text-white">
-                <Download size={20} />
-              </button>
+              <button onClick={handleDownloadPdf} className="p-2 text-slate-400 hover:text-white"><Download size={20} /></button>
             </header>
 
-            {/* 메인 콘텐츠 영역 */}
             <main className="flex-1 overflow-y-auto relative z-10 p-4 md:p-8 lg:p-10 mt-14 md:mt-0" id="pdf-content">
               <div className="max-w-5xl mx-auto">
                 {activeTab === 'dashboard' && <DashboardView />}
@@ -581,55 +524,41 @@
                 {activeTab === 'showroom' && <ShowroomView />}
                 {activeTab === 'sns_popup' && <SnsPopupView />}
               </div>
-
-              <footer className="max-w-5xl mx-auto mt-12 py-6 border-t border-white/5 text-center hidden md:block">
-                <p className="text-[10px] text-slate-600 font-medium">
-                  © 2026 Lee Junho. 본 포트폴리오는 실무 역량 증명을 위해 제작되었습니다.
-                </p>
-              </footer>
             </main>
 
-            {/* Mobile: 하단 탭 내비게이션 (md 미만에서 보임) */}
             <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#0B1120]/90 backdrop-blur-xl border-t border-white/5 z-30 pb-safe">
               <div className="flex justify-around items-center h-16">
                 {MENU.map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.id)}
-                    className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : 'text-slate-500'
-                      }`}
-                  >
-                    <div className={`p-1.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-500/10' : ''}`}>
-                      {item.icon}
-                    </div>
+                  <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : 'text-slate-500'}`}>
+                    <div className={`p-1.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-500/10' : ''}`}>{item.icon}</div>
                     <span className="text-[10px] font-medium">{item.label}</span>
                   </button>
                 ))}
               </div>
             </nav>
 
-            {/* --- 인쇄용 컨테이너 (숨김 처리) --- */}
-            {/* 고해상도 캡처를 위해 데스크탑 너비(1280px)로 고정하고, 화면 밖으로 보냄 */}
+            {/* --- 인쇄용 컨테이너 (여백 및 비율 최적화) --- */}
             <div id="print-container" style={{
               position: 'fixed',
               top: 0,
               left: '-10000px',
-              width: '1280px',
-              minHeight: '905px', // A4 비율에 맞춰 높이 지정
+              width: '1280px', // 캡처 너비
               zIndex: -9999,
-              display: 'none' // 평소에는 display: none, 캡처 시엔 block
+              display: 'none'
             }}>
-              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-dashboard">
+              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-dashboard">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">대시보드</h1>
                 <DashboardView />
               </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-career">
+              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-career">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">경력 기술서</h1>
                 <CareerHistoryView />
               </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-showroom">
+              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-showroom">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">성공 사례</h1>
                 <ShowroomView />
               </div>
-              <div className="p-10 bg-[#0F172A] text-slate-200 h-full" id="print-sns">
+              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-sns">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">SNS / 팝업</h1>
                 <SnsPopupView />
               </div>
