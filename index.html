@@ -5,17 +5,23 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>이준호 | 이커머스 총괄 디렉터 포트폴리오</title>
+
   <script src="https://cdn.tailwindcss.com"></script>
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
   <style>
     body {
       font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
       -webkit-font-smoothing: antialiased;
       letter-spacing: -0.01em;
+      background-color: #0F172A;
+      /* 기본 배경색 지정 */
     }
 
-    /* Custom scrollbar for webkit */
+    /* 커스텀 스크롤바 */
     ::-webkit-scrollbar {
       width: 8px;
     }
@@ -33,67 +39,51 @@
       background: #334155;
     }
 
-    /* Print Styles */
-    @media print {
-      @page {
-        margin: 0;
-        size: auto;
-      }
+    /* 3. [핵심] PDF 변환용 컨테이너 스타일 
+      - 화면에는 보이지 않지만, html2pdf가 이 영역을 캡처합니다.
+      - A4 비율(210mm x 297mm)을 강제하여 레이아웃 깨짐을 방지합니다.
+    */
+    #print-container {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 210mm;
+      /* A4 너비 고정 */
+      background-color: #0F172A;
+      /* 다크모드 배경색 유지 */
+      color: #E2E8F0;
+      z-index: -9999;
+      /* 화면 뒤로 숨김 */
+      visibility: hidden;
+      /* 평소에는 숨김 */
+    }
 
-      body,
-      html,
-      #root {
-        width: 100%;
-        height: auto !important;
-        overflow: visible !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        background-color: #0F172A !important;
-        color: #E2E8F0 !important;
-      }
+    /* PDF 내부의 각 페이지 */
+    .pdf-page {
+      width: 100%;
+      min-height: 297mm;
+      /* A4 높이 확보 */
+      padding: 15mm;
+      /* 여백 */
+      box-sizing: border-box;
+      background-color: #0F172A;
+      border-bottom: 1px solid #1e293b;
+      /* 페이지 구분선 (선택사항) */
+      display: flex;
+      flex-direction: column;
+    }
 
-      /* Hide UI elements */
-      aside,
-      header,
-      main,
-      nav,
-      button {
-        display: none !important;
-      }
-
-      /* Show and style print container */
-      #print-container {
-        display: block !important;
-        position: absolute !important;
-        left: 0 !important;
-        top: 0 !important;
-        width: 100% !important;
-        height: auto !important;
-        overflow: visible !important;
-        z-index: 9999 !important;
-        background-color: #0F172A !important;
-      }
-
-      #print-container>div {
-        page-break-after: always;
-        break-after: page;
-        min-height: 100vh;
-        padding: 40px !important;
-        box-sizing: border-box;
-      }
-
-      #print-container>div:last-child {
-        page-break-after: auto;
-        break-after: auto;
-      }
-
-      /* Prevent page breaks inside cards if possible */
-      article {
-        page-break-inside: avoid;
-        break-inside: avoid;
-      }
+    /* PDF 페이지 제목 스타일 */
+    .pdf-title {
+      font-size: 24px;
+      font-weight: bold;
+      color: white;
+      border-bottom: 2px solid #334155;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
     }
   </style>
+
   <script type="importmap">
     {
         "imports": {
@@ -102,7 +92,7 @@
             "lucide-react": "https://esm.sh/lucide-react@0.263.1"
         }
     }
-    </script>
+  </script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 
@@ -113,43 +103,11 @@
     import React, { useState } from 'react';
     import { createRoot } from 'react-dom/client';
     import {
-      LayoutDashboard,
-      Briefcase,
-      Award,
-      TrendingUp,
-      Activity,
-      Mail,
-      Phone,
-      Cpu,
-      Layers,
-      Globe,
-      CheckCircle2,
-      Calendar,
-      User,
-      Menu,
-      X,
-      Download
+      LayoutDashboard, Briefcase, Award, TrendingUp, Activity, Mail, Phone,
+      Cpu, Layers, Globe, CheckCircle2, Calendar, User, Menu, X, Download
     } from 'lucide-react';
 
-    // --- 스타일: 프리텐다드 폰트 적용 ---
-    const fontStyle = `
-        @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css");
-        body {
-            font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
-            background-color: #0F172A; /* Slate 900 */
-            color: #E2E8F0; /* Slate 200 */
-            -webkit-font-smoothing: antialiased;
-        }
-        .no-scrollbar::-webkit-scrollbar {
-            display: none;
-        }
-        .no-scrollbar {
-            -ms-overflow-style: none;
-            scrollbar-width: none;
-        }
-        `;
-
-    // --- 데이터 상수 ---
+    // --- 데이터 상수 (기존과 동일) ---
     const PROFILE = {
       name: "이준호",
       role: "12년차 이커머스 MD & 물류 전문가",
@@ -219,11 +177,7 @@
       }
     ];
 
-    // --- [수정됨] PDF 다운로드 함수: 브라우저 인쇄 모드 사용 ---
-    const handleDownloadPdf = () => {
-      window.print();
-    };
-
+    // --- 컴포넌트들 (기존과 동일, Card 스타일 유지) ---
     const Card = ({ children, className = "", title }) => (
       <article className={`bg-slate-800/40 backdrop-blur-md border border-white/5 rounded-xl p-5 ${className}`}>
         {title && (
@@ -255,12 +209,10 @@
                 {PROFILE.summary}
               </p>
               <address className="flex flex-wrap gap-2 not-italic">
-                <a href={`tel:${PROFILE.phone}`}
-                  className="flex items-center gap-2 text-[11px] text-slate-300 bg-black/20 px-3 py-2 rounded-lg border border-white/5 hover:bg-blue-600/20 hover:border-blue-500/50 transition-colors">
+                <a href={`tel:${PROFILE.phone}`} className="flex items-center gap-2 text-[11px] text-slate-300 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
                   <Phone size={12} className="text-blue-500" /> {PROFILE.phone}
                 </a>
-                <a href={`mailto:${PROFILE.email}`}
-                  className="flex items-center gap-2 text-[11px] text-slate-300 bg-black/20 px-3 py-2 rounded-lg border border-white/5 hover:bg-blue-600/20 hover:border-blue-500/50 transition-colors">
+                <a href={`mailto:${PROFILE.email}`} className="flex items-center gap-2 text-[11px] text-slate-300 bg-black/20 px-3 py-2 rounded-lg border border-white/5">
                   <Mail size={12} className="text-blue-500" /> {PROFILE.email}
                 </a>
               </address>
@@ -270,8 +222,7 @@
           <Card title="핵심 성과 지표">
             <div className="space-y-4">
               {STATS.map((stat, idx) => (
-                <div key={idx}
-                  className="flex justify-between items-center pb-2 border-b border-white/5 last:border-0 last:pb-0">
+                <div key={idx} className="flex justify-between items-center pb-2 border-b border-white/5 last:border-0 last:pb-0">
                   <div className="flex items-center gap-2 text-[11px] text-slate-400">
                     {stat.icon} {stat.label}
                   </div>
@@ -320,11 +271,6 @@
 
     const CareerHistoryView = () => (
       <section className="space-y-4">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-bold text-white">경력 상세</h2>
-          <span className="text-xs text-slate-500">총 11년 10개월</span>
-        </div>
-
         {CAREERS.map((career, idx) => (
           <Card key={idx} className="relative group">
             <div className="flex flex-col md:flex-row justify-between items-start mb-4 gap-2">
@@ -397,151 +343,133 @@
             </div>
           </div>
         </Card>
-        <Card className="col-span-1 md:col-span-2 border-l-2 border-l-purple-500 bg-slate-800/60">
-          <div className="flex flex-col md:flex-row gap-4 items-center">
-            <div className="flex-1">
-              <div className="text-[10px] font-bold text-purple-500 uppercase mb-2 tracking-wider">Omni-Channel Strategy</div>
-              <h3 className="text-[16px] font-bold text-white mb-2">온/오프라인 옴니채널 전략</h3>
-              <p className="text-[12px] text-slate-400 leading-relaxed">
-                이마트 트레이더스 팝업 행사와 폐쇄몰(공무원 복지몰) 입점을 통해 매출 파이프라인을 다각화했습니다.
-              </p>
-            </div>
-            <div className="flex flex-wrap gap-2 justify-center md:justify-end">
-              {["이마트 트레이더스", "공무원 복지몰", "홈앤쇼핑"].map((tag, i) => (
-                <span key={i} className="px-3 py-1.5 bg-purple-500/10 border border-purple-500/20 rounded-full text-[11px] font-medium text-purple-300">{tag}</span>
-              ))}
-            </div>
-          </div>
-        </Card>
       </section>
     );
 
-    const SnsPopupView = () => {
-      const images = [
-        { src: "./d/a.jpg", alt: "SNS/Popup Image A" },
-        { src: "./d/b.jpg", alt: "SNS/Popup Image B" },
-        { src: "./d/c.jpg", alt: "SNS/Popup Image C" },
-        { src: "./d/d.jpg", alt: "SNS/Popup Image D" },
-        { src: "./d/e.jpg", alt: "SNS/Popup Image E" },
-        { src: "./d/f.jpg", alt: "SNS/Popup Image F" },
-        { src: "./d/g.jpg", alt: "SNS/Popup Image G" },
-        { src: "./d/h.jpg", alt: "SNS/Popup Image H" },
-        { src: "./d/i.jpg", alt: "SNS/Popup Image I" },
-        { src: "./d/j.jpg", alt: "SNS/Popup Image J" },
-        { src: "./d/k.jpg", alt: "SNS/Popup Image K" },
-      ];
-      return (
-        <section>
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Activity className="text-rose-500" />
-              SNS 인플루언서 / 팝업 스토어
-            </h2>
-            <p className="text-sm text-slate-400 mt-1">다양한 채널과 오프라인 팝업 스토어 현황</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {images.map((img, idx) => (
-              <Card key={idx} className="overflow-hidden group p-0">
-                <div className="aspect-[4/3] overflow-hidden bg-slate-800 relative">
-                  <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-      );
-    };
-
+    // --- 메인 앱 컴포넌트 ---
     function Portfolio() {
       const [activeTab, setActiveTab] = useState('dashboard');
       const MENU = [
         { id: 'dashboard', label: '대시보드', icon: <LayoutDashboard size={18} /> },
         { id: 'career', label: '경력 기술서', icon: <Briefcase size={18} /> },
         { id: 'showroom', label: '성공 사례', icon: <Award size={18} /> },
-        { id: 'sns_popup', label: 'SNS / 팝업', icon: <Activity size={18} /> },
       ];
 
+      // 4. [핵심] 수정된 PDF 다운로드 함수 (html2pdf 사용)
+      const handleDownloadPdf = () => {
+        // PDF 변환 대상 엘리먼트 가져오기
+        const element = document.getElementById('print-container');
+
+        // 캡처를 위해 잠시 보이게 설정 (visibility: hidden 해제)
+        element.style.visibility = 'visible';
+        element.style.zIndex = '9999';
+
+        // 옵션 설정
+        const opt = {
+          margin: 0,
+          filename: '이준호_이커머스_MD_포트폴리오.pdf',
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: {
+            scale: 2, // 고해상도 설정
+            useCORS: true, // 이미지 크로스오리진 허용
+            scrollY: 0,
+            backgroundColor: '#0F172A' // PDF 배경색 강제 지정
+          },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        // PDF 생성 실행 및 완료 후 다시 숨김 처리
+        html2pdf().set(opt).from(element).save().then(() => {
+          element.style.visibility = 'hidden';
+          element.style.zIndex = '-9999';
+        });
+      };
+
       return (
-        <>
-          <style>{fontStyle}</style>
-          <div className="flex h-screen bg-[#0F172A] text-slate-200 overflow-hidden selection:bg-blue-500/30 selection:text-white">
-            <aside className="hidden md:flex w-64 bg-[#0B1120] border-r border-white/5 flex-col z-20 shadow-xl">
-              <div className="p-8 border-b border-white/5">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-900/40">
-                    <User size={20} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[15px] font-bold text-white tracking-tight leading-none mb-1">이준호</span>
-                    <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">MD Portfolio</span>
-                  </div>
+        <div className="flex h-screen bg-[#0F172A] text-slate-200 overflow-hidden selection:bg-blue-500/30 selection:text-white">
+          {/* 사이드바 */}
+          <aside className="hidden md:flex w-64 bg-[#0B1120] border-r border-white/5 flex-col z-20 shadow-xl">
+            <div className="p-8 border-b border-white/5">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center text-white shadow-lg shadow-blue-900/40">
+                  <User size={20} />
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-[15px] font-bold text-white tracking-tight leading-none mb-1">이준호</span>
+                  <span className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">MD Portfolio</span>
                 </div>
               </div>
-              <nav className="flex-1 p-4 space-y-1">
-                {MENU.map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.id)}
-                    className={`w-full flex items-center gap-3 px-4 py-3.5 text-[13px] font-bold rounded-xl transition-all duration-200 ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
-                    {item.icon} {item.label}
-                  </button>
-                ))}
-              </nav>
-              <div className="p-4 border-t border-white/5">
-                <button onClick={handleDownloadPdf} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[12px] font-bold transition-colors border border-white/5">
-                  <Download size={14} /> PDF 다운로드
+            </div>
+            <nav className="flex-1 p-4 space-y-1">
+              {MENU.map((item) => (
+                <button key={item.id} onClick={() => setActiveTab(item.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3.5 text-[13px] font-bold rounded-xl transition-all duration-200 ${activeTab === item.id ? 'bg-blue-600 text-white shadow-lg shadow-blue-900/40' : 'text-slate-500 hover:text-white hover:bg-white/5'}`}>
+                  {item.icon} {item.label}
                 </button>
-              </div>
-            </aside>
-
-            <header className="md:hidden fixed top-0 left-0 w-full h-14 bg-[#0B1120]/90 backdrop-blur-md border-b border-white/5 z-30 flex items-center justify-between px-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white"><span className="font-bold text-xs">이</span></div>
-                <span className="text-sm font-bold text-white">이준호 <span className="text-slate-500 text-xs font-normal">MD</span></span>
-              </div>
-              <button onClick={handleDownloadPdf} className="p-2 text-slate-400 hover:text-white"><Download size={20} /></button>
-            </header>
-
-            <main className="flex-1 overflow-y-auto relative z-10 p-4 md:p-8 lg:p-10 mt-14 md:mt-0" id="pdf-content">
-              <div className="max-w-5xl mx-auto">
-                {activeTab === 'dashboard' && <DashboardView />}
-                {activeTab === 'career' && <CareerHistoryView />}
-                {activeTab === 'showroom' && <ShowroomView />}
-                {activeTab === 'sns_popup' && <SnsPopupView />}
-              </div>
-            </main>
-
-            <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#0B1120]/90 backdrop-blur-xl border-t border-white/5 z-30 pb-safe">
-              <div className="flex justify-around items-center h-16">
-                {MENU.map((item) => (
-                  <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : 'text-slate-500'}`}>
-                    <div className={`p-1.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-500/10' : ''}`}>{item.icon}</div>
-                    <span className="text-[10px] font-medium">{item.label}</span>
-                  </button>
-                ))}
-              </div>
+              ))}
             </nav>
+            <div className="p-4 border-t border-white/5">
+              <button onClick={handleDownloadPdf} className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl text-[12px] font-bold transition-colors border border-white/5">
+                <Download size={14} /> PDF 다운로드
+              </button>
+            </div>
+          </aside>
 
-            {/* --- 인쇄용 컨테이너 --- */}
-            <div id="print-container" className="hidden">
-              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-dashboard">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">대시보드</h1>
-                <DashboardView />
-              </div>
-              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-career">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">경력 기술서</h1>
-                <CareerHistoryView />
-              </div>
-              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-showroom">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">성공 사례</h1>
-                <ShowroomView />
-              </div>
-              <div className="p-12 bg-[#0F172A] text-slate-200" id="print-sns">
-                <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">SNS / 팝업</h1>
-                <SnsPopupView />
-              </div>
+          {/* 모바일 헤더 */}
+          <header className="md:hidden fixed top-0 left-0 w-full h-14 bg-[#0B1120]/90 backdrop-blur-md border-b border-white/5 z-30 flex items-center justify-between px-4">
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white"><span className="font-bold text-xs">이</span></div>
+              <span className="text-sm font-bold text-white">이준호 <span className="text-slate-500 text-xs font-normal">MD</span></span>
+            </div>
+            <button onClick={handleDownloadPdf} className="p-2 text-slate-400 hover:text-white"><Download size={20} /></button>
+          </header>
+
+          {/* 메인 컨텐츠 영역 (화면 표시용) */}
+          <main className="flex-1 overflow-y-auto relative z-10 p-4 md:p-8 lg:p-10 mt-14 md:mt-0">
+            <div className="max-w-5xl mx-auto">
+              {activeTab === 'dashboard' && <DashboardView />}
+              {activeTab === 'career' && <CareerHistoryView />}
+              {activeTab === 'showroom' && <ShowroomView />}
+            </div>
+          </main>
+
+          {/* 모바일 네비게이션 */}
+          <nav className="md:hidden fixed bottom-0 left-0 w-full bg-[#0B1120]/90 backdrop-blur-xl border-t border-white/5 z-30 pb-safe">
+            <div className="flex justify-around items-center h-16">
+              {MENU.map((item) => (
+                <button key={item.id} onClick={() => setActiveTab(item.id)} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${activeTab === item.id ? 'text-blue-500' : 'text-slate-500'}`}>
+                  <div className={`p-1.5 rounded-xl transition-all ${activeTab === item.id ? 'bg-blue-500/10' : ''}`}>{item.icon}</div>
+                  <span className="text-[10px] font-medium">{item.label}</span>
+                </button>
+              ))}
+            </div>
+          </nav>
+
+          {/* 5. [핵심] 실제 PDF로 변환될 컨테이너
+            - 화면에는 보이지 않지만(visibility: hidden), 버튼을 누르면 이 내용을 캡처함.
+            - 모든 탭의 내용을 한 번에 담아서 출력.
+          */}
+          <div id="print-container">
+            {/* 페이지 1: 대시보드 */}
+            <div className="pdf-page">
+              <h1 className="pdf-title">Dashboard</h1>
+              <DashboardView />
             </div>
 
+            {/* 페이지 2: 경력 기술서 */}
+            <div className="pdf-page">
+              <h1 className="pdf-title">Work Experience</h1>
+              <CareerHistoryView />
+            </div>
+
+            {/* 페이지 3: 성공 사례 */}
+            <div className="pdf-page">
+              <h1 className="pdf-title">Success Cases</h1>
+              <ShowroomView />
+            </div>
           </div>
-        </>
+
+        </div>
       );
     }
 
