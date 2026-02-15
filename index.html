@@ -32,6 +32,55 @@
     ::-webkit-scrollbar-thumb:hover {
       background: #334155;
     }
+
+    /* Print Styles */
+    @media print {
+      @page {
+        margin: 0;
+        size: auto;
+      }
+
+      body {
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+        background-color: #0F172A !important;
+        color: #E2E8F0 !important;
+      }
+
+      /* Hide UI elements */
+      aside,
+      header,
+      main,
+      nav,
+      button {
+        display: none !important;
+      }
+
+      /* Show and style print container */
+      #print-container {
+        display: block !important;
+        position: static !important;
+        width: 100% !important;
+        height: auto !important;
+        overflow: visible !important;
+        left: auto !important;
+        top: auto !important;
+        z-index: 9999 !important;
+      }
+
+      #print-container>div {
+        break-after: page;
+        page-break-after: always;
+        min-height: 100vh;
+        padding: 40px !important;
+        background-color: #0F172A !important;
+      }
+
+      #print-container>div:last-child {
+        break-after: auto;
+        page-break-after: auto;
+      }
+    }
   </style>
   <script type="importmap">
     {
@@ -43,8 +92,6 @@
     }
     </script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 
 <body class="bg-[#0F172A] text-slate-200 overflow-hidden">
@@ -160,74 +207,9 @@
       }
     ];
 
-    // --- [수정됨] PDF 다운로드 함수: 원본 비율 유지 ---
-    const handleDownloadPdf = async () => {
-      const printContainer = document.getElementById('print-container');
-      if (!printContainer) return;
-
-      // 1. 캡처용 컨테이너 활성화
-      const originalLeft = printContainer.style.left;
-      const originalTop = printContainer.style.top;
-      const originalZIndex = printContainer.style.zIndex;
-
-      printContainer.style.display = 'block';
-      printContainer.style.left = '0px';
-      printContainer.style.top = '0px';
-      printContainer.style.zIndex = '99999';
-
-      // 렌더링 대기
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      try {
-        let pdf = null;
-        const views = ['print-dashboard', 'print-career', 'print-showroom', 'print-sns'];
-
-        for (let i = 0; i < views.length; i++) {
-          const viewId = views[i];
-          const element = document.getElementById(viewId);
-          if (!element) continue;
-
-          // 고화질 캡처 (scale: 2)
-          const canvas = await html2canvas(element, {
-            scale: 2,
-            useCORS: true,
-            logging: false,
-            backgroundColor: '#0F172A',
-            width: 1280, // 데스크탑 뷰 고정 너비
-            windowWidth: 1280
-          });
-
-          const imgData = canvas.toDataURL('image/png');
-          const imgWidth = canvas.width;
-          const imgHeight = canvas.height;
-
-          // 첫 번째 페이지인 경우 PDF 초기화 (첫 이미지 크기에 맞춤)
-          if (pdf === null) {
-            // orientation: 가로(l) 또는 세로(p) 자동 감지
-            const orientation = imgWidth > imgHeight ? 'l' : 'p';
-            // unit: 'px', format: [width, height] -> 이미지 크기 그대로 PDF 생성
-            pdf = new jspdf.jsPDF(orientation, 'px', [imgWidth, imgHeight]);
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-          } else {
-            // 두 번째 페이지부터는 해당 이미지 크기에 맞춰 페이지 추가
-            const orientation = imgWidth > imgHeight ? 'l' : 'p';
-            pdf.addPage([imgWidth, imgHeight], orientation);
-            pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
-          }
-        }
-
-        if (pdf) {
-          pdf.save('portfolio_leejunho_original.pdf');
-        }
-      } catch (error) {
-        console.error("PDF Download Error:", error);
-        alert("PDF 다운로드 중 오류가 발생했습니다.");
-      } finally {
-        printContainer.style.display = 'none';
-        printContainer.style.left = originalLeft;
-        printContainer.style.top = originalTop;
-        printContainer.style.zIndex = originalZIndex;
-      }
+    // --- [수정됨] PDF 다운로드 함수: 브라우저 인쇄 모드 사용 ---
+    const handleDownloadPdf = () => {
+      window.print();
     };
 
     const Card = ({ children, className = "", title }) => (
@@ -526,15 +508,8 @@
               </div>
             </nav>
 
-            {/* --- 인쇄용 컨테이너 (원본 비율 유지) --- */}
-            <div id="print-container" style={{
-              position: 'fixed',
-              top: 0,
-              left: '-10000px',
-              width: '1280px', // 데스크탑 너비 고정 (비율 유지를 위함)
-              zIndex: -9999,
-              display: 'none'
-            }}>
+            {/* --- 인쇄용 컨테이너 --- */}
+            <div id="print-container" className="hidden">
               <div className="p-12 bg-[#0F172A] text-slate-200" id="print-dashboard">
                 <h1 className="text-3xl font-bold mb-6 text-white border-b border-white/10 pb-4">대시보드</h1>
                 <DashboardView />
