@@ -10,8 +10,6 @@
   <link rel="stylesheet" as="style" crossorigin
     href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css" />
 
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
-
   <style>
     body {
       font-family: "Pretendard Variable", Pretendard, -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
@@ -437,34 +435,9 @@
         { id: 'sns_popup', label: 'SNS / 팝업', icon: <Activity size={18} /> },
       ];
 
-      // 4. [핵심] 수정된 PDF 다운로드 함수 (html2pdf 사용)
+      // 4. [핵심] PDF 저장을 위한 브라우저 인쇄 기능 사용
       const handleDownloadPdf = () => {
-        // PDF 변환 대상 엘리먼트 가져오기
-        const element = document.getElementById('print-container');
-
-        // 캡처를 위해 잠시 보이게 설정 (visibility: hidden 해제)
-        element.style.visibility = 'visible';
-        element.style.zIndex = '9999';
-
-        // 옵션 설정
-        const opt = {
-          margin: 0,
-          filename: '이준호_이커머스_MD_포트폴리오.pdf',
-          image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: {
-            scale: 2, // 고해상도 설정
-            useCORS: true, // 이미지 크로스오리진 허용
-            scrollY: 0,
-            backgroundColor: '#0F172A' // PDF 배경색 강제 지정
-          },
-          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
-        };
-
-        // PDF 생성 실행 및 완료 후 다시 숨김 처리
-        html2pdf().set(opt).from(element).save().then(() => {
-          element.style.visibility = 'hidden';
-          element.style.zIndex = '-9999';
-        });
+        window.print();
       };
 
       return (
