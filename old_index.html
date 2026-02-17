@@ -82,51 +82,6 @@
       padding-bottom: 10px;
       margin-bottom: 20px;
     }
-
-    /* 4. [추가] 브라우저 기본 인쇄(Ctrl+P) 지원 스타일 */
-    @media print {
-      @page {
-        margin: 0;
-        size: auto;
-      }
-
-      body {
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-        background-color: #0F172A !important;
-      }
-
-      /* UI 숨기기 */
-      aside,
-      header,
-      main,
-      nav {
-        display: none !important;
-      }
-
-      /* 전체 래퍼 초기화 (overflow-hidden 해제) */
-      #root>div {
-        display: block !important;
-        height: auto !important;
-        overflow: visible !important;
-      }
-
-      /* 인쇄용 컨테이너 보이기 */
-      #print-container {
-        position: relative !important;
-        visibility: visible !important;
-        z-index: 9999 !important;
-        width: 100% !important;
-        left: auto !important;
-        top: auto !important;
-      }
-
-      .pdf-page {
-        page-break-after: always;
-        min-height: 100vh;
-        height: auto !important;
-      }
-    }
   </style>
 
   <script type="importmap">
@@ -391,42 +346,6 @@
       </section>
     );
 
-    const SnsPopupView = () => {
-      const images = [
-        { src: "./d/a.jpg", alt: "SNS/Popup Image A" },
-        { src: "./d/b.jpg", alt: "SNS/Popup Image B" },
-        { src: "./d/c.jpg", alt: "SNS/Popup Image C" },
-        { src: "./d/d.jpg", alt: "SNS/Popup Image D" },
-        { src: "./d/e.jpg", alt: "SNS/Popup Image E" },
-        { src: "./d/f.jpg", alt: "SNS/Popup Image F" },
-        { src: "./d/g.jpg", alt: "SNS/Popup Image G" },
-        { src: "./d/h.jpg", alt: "SNS/Popup Image H" },
-        { src: "./d/i.jpg", alt: "SNS/Popup Image I" },
-        { src: "./d/j.jpg", alt: "SNS/Popup Image J" },
-        { src: "./d/k.jpg", alt: "SNS/Popup Image K" },
-      ];
-      return (
-        <section>
-          <div className="mb-6">
-            <h2 className="text-xl font-bold text-white flex items-center gap-2">
-              <Activity className="text-rose-500" />
-              SNS 인플루언서 / 팝업 스토어
-            </h2>
-            <p className="text-sm text-slate-400 mt-1">다양한 채널과 오프라인 팝업 스토어 현황</p>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {images.map((img, idx) => (
-              <Card key={idx} className="overflow-hidden group p-0">
-                <div className="aspect-[4/3] overflow-hidden bg-slate-800 relative">
-                  <img src={img.src} alt={img.alt} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" loading="lazy" />
-                </div>
-              </Card>
-            ))}
-          </div>
-        </section>
-      );
-    };
-
     // --- 메인 앱 컴포넌트 ---
     function Portfolio() {
       const [activeTab, setActiveTab] = useState('dashboard');
@@ -434,7 +353,6 @@
         { id: 'dashboard', label: '대시보드', icon: <LayoutDashboard size={18} /> },
         { id: 'career', label: '경력 기술서', icon: <Briefcase size={18} /> },
         { id: 'showroom', label: '성공 사례', icon: <Award size={18} /> },
-        { id: 'sns_popup', label: 'SNS / 팝업', icon: <Activity size={18} /> },
       ];
 
       // 4. [핵심] 수정된 PDF 다운로드 함수 (html2pdf 사용)
@@ -512,7 +430,6 @@
               {activeTab === 'dashboard' && <DashboardView />}
               {activeTab === 'career' && <CareerHistoryView />}
               {activeTab === 'showroom' && <ShowroomView />}
-              {activeTab === 'sns_popup' && <SnsPopupView />}
             </div>
           </main>
 
@@ -549,12 +466,6 @@
             <div className="pdf-page">
               <h1 className="pdf-title">Success Cases</h1>
               <ShowroomView />
-            </div>
-
-            {/* 페이지 4: SNS / 팝업 */}
-            <div className="pdf-page">
-              <h1 className="pdf-title">SNS / Popup Store</h1>
-              <SnsPopupView />
             </div>
           </div>
 
